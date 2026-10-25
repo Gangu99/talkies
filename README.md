@@ -7,6 +7,9 @@ A small, ad-free home screen for Android TV and Google TV: one calm screen, ligh
 launcher); it adapts to the TV's country (picks, cricket, °C or °F) and screen, but other TVs and countries haven't
 been tested.
 
+Talkies only replaces the home screen: it doesn't remove the TV maker's apps, ads services or tracking. To do that
+too, use [CleanYourTV](https://github.com/Gathin23/cleanyourtv) first; Talkies works alongside it.
+
 - Top left, the weather, then the time and date ("22° OVERCAST", "11:10 PM | WEDNESDAY 21 OCTOBER")
 - **For You** below it: three tabs (Continue, Trending, New in *your country*) and a row of picks, the current pick large with
   a one-line description ("Film · Comedy · Hindi · Netflix"), the next ones small beside it. It can be hidden, and the clock then grows
@@ -347,8 +350,7 @@ To just peek at Projectivy, open its tile under All apps; the Home button still 
 ```bash
 ./build-and-install.sh                 # optimised build (about 200 KB, no libraries), install, set as home
 ./restore.sh                           # the TV's own home screen back, Talkies removed
-./restore.sh --keep-talkies              # the TV's own home screen back, Talkies kept
-./restore.sh --all                     # also undo the debloat, animation speed and Private DNS
+./restore.sh --keep-talkies            # the TV's own home screen back, Talkies kept
 ./set-region.sh GB                     # use another country for picks, cricket and °C/°F (--remove: the TV's own)
 ```
 
@@ -470,36 +472,17 @@ Remote buttons and Home are seen by the service only from a real remote: keys se
 skip Android's accessibility key filter, so Home sent that way opens Google TV. Known gap: choosing a film inside the Assistant's own results list doesn't open its page (the
 Google app declines to start it); asking for the title by name does.
 
-## Re-enable an app
+## Google TV's setup wizard
 
-Nothing was uninstalled; the debloated apps are only disabled. To turn one back on:
+On Google TV, `build-and-install.sh` turns off Google's setup wizard (`com.google.android.tungsten.setupwraith`),
+because it also answers the Home button; it's the only app Talkies' scripts turn off. To turn it back on:
 
 ```bash
-adb -s "$TALKIES_TV" shell pm enable <package>
+adb -s "$TALKIES_TV" shell pm enable com.google.android.tungsten.setupwraith
 ```
 
-These are this OnePlus TV's; other TVs have their own bloat (CleanYourTV's lists cover many models).
-
-| Package | What it is |
-|---|---|
-| `com.google.android.tungsten.setupwraith` | Google setup wizard (also claims the Home button while it's on) |
-| `net.oneplus.weather` | OnePlus Weather |
-| `oneplus.smarthome` | OnePlus Smart Home |
-| `com.oneplus.tv.userguide` | OnePlus user guide |
-| `fusion.android.tv.demo` | In-store demo mode |
-| `com.heytap.tv.msgboard` | OnePlus message board |
-| `com.heytap.tv.remotediagnosing` | Remote diagnostics |
-| `com.heytap.mcs` | HeyTap push messages |
-| `com.heytap.olink` | OnePlus Connect (phone link) |
-| `com.heytap.tv.camera` | Camera app |
-| `com.coloros.relax.tv` | Relax screensaver |
-| `com.google.android.play.games` | Google Play Games |
-| `com.google.android.feedback` | Google Feedback |
-| `com.android.printspooler` | Printing |
-| `com.android.dreams.basic` | Basic screensaver |
-
-If you re-enable the Google TV launcher or the setup wizard, Android may switch Home back to them.
-To make Talkies the default again:
+If you turn the wizard or the Google TV launcher back on, Android may switch Home back to them. To make Talkies the
+default again:
 
 ```bash
 adb -s "$TALKIES_TV" shell cmd package set-home-activity --user 0 com.techpp.glass/.HomeActivity
@@ -533,8 +516,8 @@ Turn it back on when you want to update Talkies.
 
 ## Going back
 
-`./restore.sh` puts the TV's own home screen back and uninstalls Talkies (`--keep-talkies` keeps it installed,
-`--all` also re-enables the apps the debloat list disabled). By hand:
+`./restore.sh` puts the TV's own home screen back, turns Google's setup wizard back on (Google TV) and uninstalls
+Talkies (`--keep-talkies` keeps it installed). By hand:
 
 ```bash
 adb -s 192.168.1.20:5555 shell pm enable com.google.android.apps.tv.launcherx           # Google TV only
@@ -542,9 +525,7 @@ adb -s 192.168.1.20:5555 shell pm enable com.google.android.tungsten.setupwraith
 adb -s 192.168.1.20:5555 uninstall com.techpp.glass
 ```
 
-Without a computer: Settings → Apps → Talkies → Uninstall, and the TV's own launcher takes Home again. Apps the
-scripts disabled can be re-enabled from the TV's Settings → Apps (system apps are usually behind a "Show system
-apps" option).
+Without a computer: Settings → Apps → Talkies → Uninstall, and the TV's own launcher takes Home again.
 
 ## Credits
 
@@ -564,5 +545,10 @@ Code (details and license texts in `THIRD_PARTY_NOTICES.md`, all MIT):
   [CleanYourTV](https://github.com/Gathin23/cleanyourtv).
 - The damped spring behind the motion, and the trending row's idea: [Free My TV](https://github.com/simbasjungles/free-my-tv).
 - The speed test, HDMI-CEC names and the update bell's approach: [Matinee](https://github.com/Jarvis322/matinee).
+
+Ideas (no code; Talkies' own implementation):
+
+- The hold-OK menu (Move, Uninstall, App info), removing a card from Continue, and giving remote buttons a new job:
+  [Plume](https://github.com/aradhyas8/Plume_Launcher). Remote keys also follow CleanYourTV's.
 
 The Outfit typeface is © The Outfit Project Authors, licensed under the SIL Open Font License 1.1 (`OUTFIT-OFL.txt`).
