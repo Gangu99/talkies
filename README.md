@@ -68,7 +68,10 @@ Gradle, so it takes a few minutes.
 
 1. **On the TV**, turn on developer options (Settings → Device Preferences → About → press **Build** seven times),
    then **USB debugging** / **Network debugging** in Developer options. Note the TV's IP address
-   (Settings → Network).
+   (Settings → Network & Internet → your Wi-Fi network), something like `192.168.0.105`.
+
+   > **Every `192.168.1.20` in this README is an example.** Put your own TV's address in its place; `:5555`
+   > stays as it is (it's the port network debugging uses).
 2. **Connect once** and accept "Allow debugging?" on the TV:
    ```bash
    adb connect 192.168.1.20:5555
