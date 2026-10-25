@@ -1,0 +1,30 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.techpp.glass'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'com.techpp.glass'
+        minSdk 30          // the TV runs Android 11 (API 30)
+        targetSdk 35
+        versionCode 1
+        versionName '1.0'
+    }
+    buildTypes {
+        release {
+            // Strips code nothing uses and shortens names: the APK goes from about 4 MB to a few hundred KB.
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // Signed with the same (debug) key as earlier builds, so it installs over them and keeps their data
+            // and the accessibility switch.
+            signingConfig signingConfigs.debug
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+// No libraries: Android's own framework only, which keeps the APK and memory small.

@@ -1,0 +1,109 @@
+package com.techpp.glass;
+
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.util.Log;
+import android.view.KeyEvent;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
+
+/**
+ * Remote keys (Control Center → Remote keys): a button on the remote given another job, e.g. the Netflix button
+ * opening JioHotstar. SleepService, Talkies' accessibility service, sees the press before the TV does and does
+ * the job instead; buttons with no job pass through untouched. Kept in the "remote_keys" preferences as
+ * key code → action: "app:<package>", "inputs", "home" or "none". An idea from Plume and CleanYourTV.
+ */
+final class RemoteKeys {
+    static final String INPUTS = "inputs", HOME = "home", NONE = "none", APP = "app:";
+    static final String EXTRA_OPEN = "com.techpp.glass.OPEN";
+
+    private RemoteKeys() { }
+
+    private static SharedPreferences prefs(Context c) { return c.getSharedPreferences("remote_keys", Context.MODE_PRIVATE); }
+
+    /** Navigation, OK, Back, Home, volume and power keep their jobs: remapping them could lock you out of the TV. */
+    static boolean learnable(int code) {
+        switch (code) {
+            case KeyEvent.KEYCODE_DPAD_UP: case KeyEvent.KEYCODE_DPAD_DOWN: case KeyEvent.KEYCODE_DPAD_LEFT:
+            case KeyEvent.KEYCODE_DPAD_RIGHT: case KeyEvent.KEYCODE_DPAD_CENTER: case KeyEvent.KEYCODE_ENTER:
+            case KeyEvent.KEYCODE_NUMPAD_ENTER: case KeyEvent.KEYCODE_BACK: case KeyEvent.KEYCODE_ESCAPE:
+            case KeyEvent.KEYCODE_HOME: case KeyEvent.KEYCODE_VOLUME_UP: case KeyEvent.KEYCODE_VOLUME_DOWN:
+            case KeyEvent.KEYCODE_VOLUME_MUTE: case KeyEvent.KEYCODE_POWER: case KeyEvent.KEYCODE_SLEEP:
+            case KeyEvent.KEYCODE_WAKEUP: case KeyEvent.KEYCODE_TV_POWER: case KeyEvent.KEYCODE_UNKNOWN:
+                return false;
+            default:
+                return true;
+        }
+    }
+
+    static String action(Context c, int code) { return prefs(c).getString("k" + code, null); }
+
+    static void set(Context c, int code, String action) {
+        if (action == null) prefs(c).edit().remove("k" + code).apply();
+        else prefs(c).edit().putString("k" + code, action).apply();
+    }
+
+    /** Key code → action, in key-code order. */
+    static Map<Integer, String> all(Context c) {
+        Map<Integer, String> out = new TreeMap<>();
+        for (Map.Entry<String, ?> e : prefs(c).getAll().entrySet()) {
+            try {
+                out.put(Integer.parseInt(e.getKey().substring(1)), String.valueOf(e.getValue()));
+            } catch (RuntimeException ignored) {
+                // Not ours.
+            }
+        }
+        return out;
+    }
+
+    /** "Prog Red", "Button 3", "Key 1201" for a vendor key Android has no name for. */
+    static String keyName(int code) {
+        String s = KeyEvent.keyCodeToString(code);
+        if (!s.startsWith("KEYCODE_")) return "Key " + code;
+        StringBuilder b = new StringBuilder();
+        for (String w : s.substring(8).toLowerCase(Locale.ROOT).split("_")) {
+            if (w.isEmpty()) continue;
+            if (b.length() > 0) b.append(' ');
+            b.append(Character.toUpperCase(w.charAt(0))).append(w.substring(1));
+        }
+        return b.toString();
+    }
+
+    static String describe(Context c, String action) {
+        if (action == null) return "Normal";
+        if (action.equals(INPUTS)) return "Inputs";
+        if (action.equals(HOME)) return "Talkies";
+        if (action.equals(NONE)) return "Nothing";
+        if (action.startsWith(APP)) return "Open " + Channels.label(c.getPackageManager(), action.substring(APP.length()));
+        return action;
+    }
+
+    /** Does the job. Called on the accessibility service's thread (main). */
+    static void run(SleepService s, String action) {
+        try {
+            if (action.equals(HOME)) {
+                s.openHome();
+            } else if (action.equals(INPUTS)) {
+                s.startActivity(new Intent(Intent.ACTION_MAIN).setClass(s, HomeActivity.class).putExtra(EXTRA_OPEN, INPUTS)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED));
+            } else if (action.startsWith(APP)) {
+                PackageManager pm = s.getPackageManager();
+                String pkg = action.substring(APP.length());
+                Intent i = pm.getLeanbackLaunchIntentForPackage(pkg);
+                if (i == null) i = pm.getLaunchIntentForPackage(pkg);
+                if (i != null) s.startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            }
+            // NONE: the button does nothing.
+        } catch (RuntimeException e) {
+            Log.w("GlassKeys", "Couldn't run " + action + ": " + e);
+        }
+    }
+
+    static List<Integer> codes(Context c) { return new ArrayList<>(all(c).keySet()); }
+}
