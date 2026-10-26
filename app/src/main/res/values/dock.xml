@@ -3,12 +3,12 @@
     <!-- The starting dock, left to right (7 apps). Rearrange on the TV by holding OK on an app;
          apps that aren't installed are skipped and the dock fills up from the rest. -->
     <string-array name="dock_packages">
-        <item>in.startv.hotstar</item>
-        <item>com.google.android.youtube.tv</item>
-        <item>com.netflix.ninja</item>
-        <item>com.amazon.amazonvideo.livingroom</item>
-        <item>com.graymatrix.did</item>
-        <item>tv.airtel.xstream.tvapp</item>
-        <item>com.apple.atve.androidtv.appletv</item>
+          <item>com.google.android.youtube.tv</item>
+          <item>tv.airtel.xstream.tvapp</item>
+          <item>in.startv.hotstar</item>
+          <item>ch.protonvpn.android</item>
+          <item>com.internet.tvbrowser</item>
+          <item>com.android.vending</item>
+          <item>com.suntv.sunnxt</item>
     </string-array>
 </resources>
